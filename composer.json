@@ -1,0 +1,79 @@
+{
+    "name": "traffical/sdk",
+    "description": "Traffical PHP SDK — deterministic feature flags, experiments, and warehouse-native experimentation. Conformance-tested against the language-agnostic Traffical SDK spec.",
+    "type": "library",
+    "keywords": [
+        "feature-flags",
+        "experimentation",
+        "ab-testing",
+        "traffical",
+        "warehouse-native",
+        "bandit"
+    ],
+    "homepage": "https://traffical.io",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Traffical",
+            "homepage": "https://traffical.io"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "psr/http-client": "^1.0",
+        "psr/http-factory": "^1.0",
+        "psr/http-message": "^1.1 || ^2.0",
+        "psr/simple-cache": "^2.0 || ^3.0",
+        "psr/log": "^2.0 || ^3.0",
+        "psr/clock": "^1.0",
+        "php-http/discovery": "^1.19"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5",
+        "phpstan/phpstan": "^1.11",
+        "friendsofphp/php-cs-fixer": "^3.59",
+        "php-http/mock-client": "^1.6",
+        "nyholm/psr7": "^1.8",
+        "guzzlehttp/guzzle": "^7.8"
+    },
+    "suggest": {
+        "guzzlehttp/guzzle": "PSR-18 HTTP client for fetching config and sending events",
+        "symfony/http-client": "Alternative PSR-18 HTTP client",
+        "symfony/cache": "PSR-16 shared cache store so PHP-FPM workers share one config bundle",
+        "illuminate/support": "Required for the Laravel service provider and facade",
+        "symfony/framework-bundle": "Required for the Symfony bundle integration",
+        "open-feature/sdk": "Required for the OpenFeature provider"
+    },
+    "autoload": {
+        "psr-4": {
+            "Traffical\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Traffical\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "conformance": "phpunit --testsuite conformance",
+        "phpstan": "phpstan analyse",
+        "cs-check": "php-cs-fixer fix --dry-run --diff",
+        "cs-fix": "php-cs-fixer fix"
+    },
+    "scripts-descriptions": {
+        "test": "Run the full PHPUnit test suite (unit + conformance)",
+        "conformance": "Run only the sdk-spec conformance vectors",
+        "phpstan": "Run static analysis at the configured level",
+        "cs-check": "Check code style against PSR-12 without modifying files",
+        "cs-fix": "Apply PSR-12 code style fixes"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

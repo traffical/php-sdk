@@ -1,0 +1,11 @@
+parameters:
+    level: max
+    paths:
+        - src
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        # Optional framework integrations are only analysable when the host app
+        # has the relevant package installed; guard them out of the base run.
+        -
+            message: '#.*(Illuminate|Symfony|OpenFeature)\\.*#'
+            reportUnmatched: false
