@@ -41,7 +41,9 @@
         "symfony/http-client": "Alternative PSR-18 HTTP client",
         "symfony/cache": "PSR-16 shared cache store so PHP-FPM workers share one config bundle",
         "illuminate/support": "Required for the Laravel service provider and facade",
-        "symfony/framework-bundle": "Required for the Symfony bundle integration",
+        "symfony/http-kernel": "Required for the Symfony bundle integration",
+        "symfony/dependency-injection": "Required for the Symfony bundle integration",
+        "symfony/config": "Required for the Symfony bundle configuration tree",
         "open-feature/sdk": "Required for the OpenFeature provider"
     },
     "autoload": {
@@ -73,6 +75,16 @@
         "phpstan": "Run static analysis at the configured level",
         "cs-check": "Check code style against PSR-12 without modifying files",
         "cs-fix": "Apply PSR-12 code style fixes"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Traffical\\Laravel\\TrafficalServiceProvider"
+            ],
+            "aliases": {
+                "Traffical": "Traffical\\Laravel\\Traffical"
+            }
+        }
     },
     "minimum-stability": "stable",
     "prefer-stable": true

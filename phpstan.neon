@@ -3,9 +3,11 @@ parameters:
     paths:
         - src
     treatPhpDocTypesAsCertain: false
-    ignoreErrors:
-        # Optional framework integrations are only analysable when the host app
-        # has the relevant package installed; guard them out of the base run.
-        -
-            message: '#.*(Illuminate|Symfony|OpenFeature)\\.*#'
-            reportUnmatched: false
+    # Optional framework integrations extend classes from packages that are not
+    # part of require/require-dev (illuminate/support, symfony/*, open-feature/sdk).
+    # They cannot be statically analysed without those packages installed, so they
+    # are excluded from the base run; CI analyses them in the framework matrix jobs.
+    excludePaths:
+        - src/Laravel/*
+        - src/Symfony/*
+        - src/OpenFeature/*
