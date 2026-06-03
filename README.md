@@ -1,17 +1,46 @@
 # Traffical PHP SDK
 
-Deterministic feature flags, experiments, and **warehouse-native experimentation** for PHP `^8.1`.
+[Traffical](https://traffical.io) is one control plane for experiments, feature flags, and adaptive
+optimization. Instead of hard-coding decisions, you expose **typed parameters** — numbers, strings, booleans,
+and JSON, not just on/off toggles — and control behavior across web, mobile, push, and backend from a single
+place. Parameters are resolved **locally in the SDK** (sub-millisecond, no network round trips at runtime), and
+metrics are computed **warehouse-native**, against data you own. Start with a feature flag, graduate it to an
+A/B test, and let adaptive optimization shift traffic to the winning variant — all on the same parameter,
+without a deploy.
 
-The PHP SDK shares the language-agnostic [Traffical SDK spec](tests/sdk-spec/test-vectors/README.md) with the
-JS/TS and Swift SDKs: the same FNV-1a (UTF-8 byte) bucketing, the same layered resolution engine, the same
-contextual-bandit scoring. Every release is gated on the spec's deterministic conformance vectors, so a unit
-buckets identically on every platform.
+This package is the **official PHP SDK** (PHP `^8.1`) that brings the Traffical parameter control plane to your
+PHP services.
 
-- Local **bundle mode** — resolve parameters in-process from a cached config (no per-decision network call).
-- **Server mode** — delegate resolution to the Traffical edge via `POST /v1/resolve`.
-- **BYO warehouse-native assignment logging** — route structured assignment rows through your own pipeline.
-- PSR-first: PSR-18 HTTP client, PSR-17 factories, PSR-16 cache, PSR-3 logger, PSR-20 clock are all injectable.
-- PHP-FPM aware: events flush on shutdown after the response is returned via `fastcgi_finish_request()`.
+## Features
+
+- **Local, in-process evaluation** — resolve a cached config bundle with no per-decision network call.
+- **Typed parameters with safe defaults** — bool / string / number / JSON, each with a caller-provided fallback.
+- **Layered experiments & targeting** — Google-style layered isolation, condition/attribute segmentation, and
+  progressive (percentage) rollouts.
+- **Adaptive optimization** — contextual-bandit scoring evaluated client-side.
+- **BYO warehouse-native assignment logging** — route structured assignment rows through your own pipeline
+  (Segment, RudderStack, a DB, a queue) so assignment data never has to leave your infrastructure.
+- **Event tracking** — exposure, decision, and custom track events, batched and flushed PHP-FPM-aware via
+  `fastcgi_finish_request()` so the response returns before events are sent.
+- **Plugin system** — hook into the `decide` / `exposure` / `track` lifecycle from day one.
+- **PSR-first & framework-ready** — PSR-18 HTTP, PSR-17 factories, PSR-16 cache, PSR-3 logger, and PSR-20 clock
+  are all injectable; first-party Laravel, Symfony, and OpenFeature integrations.
+
+## Modes
+
+- **Bundle mode (default)** — the SDK fetches a config bundle, caches it (shared across PHP-FPM workers via a
+  PSR-16 store), and resolves every parameter locally. No per-decision network call.
+- **Server mode** — resolution is delegated to the Traffical edge via `POST /v1/resolve` (cached per request).
+  Use it when you want zero client-side evaluation logic.
+
+## Further reading
+
+- [docs/warehouse-native.md](docs/warehouse-native.md) — BYO assignment logging and warehouse-native metrics
+- [docs/plugins.md](docs/plugins.md) — the plugin lifecycle and built-in plugins
+- [docs/php-lifecycle.md](docs/php-lifecycle.md) — event batching and flushing under PHP-FPM
+- [docs/conformance.md](docs/conformance.md) — cross-language determinism and the bundle-vs-server tradeoffs
+- [examples/](examples/) — runnable examples: basic, server mode, warehouse-native BYO, custom plugin, plus
+  [Laravel](examples/laravel.md) and [Symfony](examples/symfony.md) guides
 
 ## Installation
 
@@ -162,6 +191,14 @@ with the fluent `with*()` methods (each returns a new instance):
 | `logger` | `NullLogger` | PSR-3 logger |
 | `clock` | system | PSR-20 clock |
 | `plugins` | `[]` | Plugin list |
+
+## Cross-language conformance
+
+The PHP SDK shares the language-agnostic [Traffical SDK spec](tests/sdk-spec/test-vectors/README.md) with the
+JS/TS and Swift SDKs: the same FNV-1a (UTF-8 byte) bucketing, the same layered resolution engine, and the same
+contextual-bandit scoring. Every release is gated on the spec's deterministic conformance vectors, so a given
+unit buckets identically on every platform. The fixtures are pinned via the `tests/sdk-spec` git submodule and
+run as part of `composer conformance`.
 
 ## Development
 
