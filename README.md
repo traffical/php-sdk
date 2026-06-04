@@ -195,7 +195,7 @@ with the fluent `with*()` methods (each returns a new instance):
 ## Cross-language conformance
 
 The PHP SDK shares the language-agnostic [Traffical SDK spec](tests/sdk-spec/test-vectors/README.md) with the
-JS/TS and Swift SDKs: the same FNV-1a (UTF-8 byte) bucketing, the same layered resolution engine, and the same
+JS/TS and Swift SDKs: the same SHA-256 v2 (UTF-8 byte) bucketing, the same layered resolution engine, and the same
 contextual-bandit scoring. Every release is gated on the spec's deterministic conformance vectors, so a given
 unit buckets identically on every platform. The fixtures are pinned via the `tests/sdk-spec` git submodule and
 run as part of `composer conformance`.

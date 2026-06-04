@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Traffical\Engine;
 
 /**
- * Deterministic weighted selection using FNV-1a hashing. Used by both
- * per-entity resolution and contextual bandit scoring.
+ * Deterministic weighted selection using the SHA-256 v2 assignment hash. Used
+ * by both per-entity resolution and contextual bandit scoring.
  */
 final class WeightedSelection
 {
@@ -22,8 +22,7 @@ final class WeightedSelection
             return 0;
         }
 
-        $hash = Fnv1a::hash($seed);
-        $random = ($hash % 10000) / 10000;
+        $random = AssignmentHash::uniform(AssignmentHash::digest($seed));
 
         $cumulative = 0.0;
         for ($i = 0; $i < $count; $i++) {

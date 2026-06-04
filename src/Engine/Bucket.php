@@ -9,7 +9,9 @@ use Traffical\Types\BundleAllocation;
 /**
  * Deterministic bucket assignment for traffic splitting.
  *
- * bucket = fnv1a(unitKeyValue + ":" + layerId) % bucketCount
+ * digest  = SHA256(AssignmentHash::input(unitKeyValue, layerId))
+ * hashInt = first 64 bits of digest, unsigned big-endian
+ * bucket  = hashInt % bucketCount
  */
 final class Bucket
 {
@@ -18,9 +20,9 @@ final class Bucket
      */
     public static function compute(string $unitKeyValue, string $layerId, int $bucketCount): int
     {
-        $hash = Fnv1a::hash($unitKeyValue . ':' . $layerId);
+        $digest = AssignmentHash::digest(AssignmentHash::input($unitKeyValue, $layerId));
 
-        return $hash % $bucketCount;
+        return AssignmentHash::mod64($digest, $bucketCount);
     }
 
     /**

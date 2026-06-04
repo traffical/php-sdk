@@ -28,14 +28,15 @@ composer conformance
 | `bundle_contextual` | Contextual-bandit scoring (`softmax`, action-probability floor) |
 | `bundle_contextual_boundary` | Near-gridline softmax cases — detects cross-language `exp()` drift |
 | `bundle_per_layer_unit_key` | Per-layer unit-key override (`bucket = -1` skip) + attributionOnly |
-| `bundle_unicode` | FNV-1a hashing over **UTF-8 bytes** (non-ASCII unit keys) |
+| `bundle_unicode` | SHA-256 v2 hashing over **UTF-8 bytes** (non-ASCII unit keys and layer IDs) |
 
 ## Hashing domain
 
-FNV-1a (32-bit) is computed over **UTF-8 bytes**, not UTF-16 code units. The PHP engine uses the native
-`hash('fnv1a32', …)` (verified against the vectors) with a hand-rolled `($h * 16777619) & 0xFFFFFFFF`
-reference used in unit tests. ASCII keys are unaffected by the byte-vs-code-unit distinction; the
-`bundle_unicode` vector pins the non-ASCII behavior across SDKs.
+The SHA-256 v2 assignment hash is computed over the **UTF-8 bytes** of a length-framed, domain-separated
+input (`traffical:assignment:v2|u:<len>:<unitKeyValue>|l:<len>:<layerId>`), not UTF-16 code units. The PHP
+engine uses the native `hash('sha256', …, true)` (raw binary) and folds the first 8 digest bytes (unsigned
+big-endian) modulo `bucketCount` with overflow-safe base-256 arithmetic. ASCII keys are unaffected by the
+byte-vs-code-unit distinction; the `bundle_unicode` vector pins the non-ASCII behavior across SDKs.
 
 ## Bundle vs. server mode
 
