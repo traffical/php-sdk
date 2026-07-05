@@ -30,6 +30,8 @@ final class DecisionEvent implements TrackableEvent
         public readonly ?array $context = null,
         public readonly ?string $sdkName = null,
         public readonly ?string $sdkVersion = null,
+        /** Config bundle version the SDK evaluated against. */
+        public readonly ?string $configVersion = null,
     ) {
     }
 
@@ -59,6 +61,9 @@ final class DecisionEvent implements TrackableEvent
         }
         if ($this->context !== null) {
             $out['context'] = $this->context;
+        }
+        if ($this->configVersion !== null) {
+            $out['configVersion'] = $this->configVersion;
         }
 
         return $out;

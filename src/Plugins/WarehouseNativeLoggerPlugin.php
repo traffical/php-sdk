@@ -64,6 +64,10 @@ final class WarehouseNativeLoggerPlugin extends AbstractPlugin
                 decisionId: $event->decisionId,
                 anonymousId: null,
                 id: $this->ids->assignment(),
+                bucket: $layer->bucket >= 0 ? $layer->bucket : null,
+                probability: $layer->probability,
+                modelVersion: $layer->modelVersion,
+                configVersion: $event->configVersion,
             ));
         }
 

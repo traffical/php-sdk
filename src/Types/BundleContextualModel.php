@@ -22,6 +22,14 @@ final class BundleContextualModel
         /** Default score for allocations without trained coefficients. */
         public readonly float $defaultAllocationScore,
         public readonly array $coefficients,
+        /**
+         * Model timestamp of the coefficients — the bundle's `generatedAt`
+         * (trainingSummary.generatedAt), with `modelVersion` accepted as an
+         * alias. Emitted on exposure/decision layer entries as `modelVersion`;
+         * when the bundle carries neither, the emission site falls back to the
+         * policy's `stateVersion`.
+         */
+        public readonly ?string $modelVersion = null,
     ) {
     }
 
@@ -42,6 +50,7 @@ final class BundleContextualModel
             actionProbabilityFloor: Json::float($data, 'actionProbabilityFloor'),
             defaultAllocationScore: Json::float($data, 'defaultAllocationScore'),
             coefficients: $coefficients,
+            modelVersion: Json::strOrNull($data, 'generatedAt') ?? Json::strOrNull($data, 'modelVersion'),
         );
     }
 }

@@ -19,8 +19,9 @@ use Traffical\Warehouse\WarehouseNativeLogger;
 // Your sink: HTTP API, CDP (Segment/RudderStack), queue, or direct DB insert.
 $sink = function (array $row): void {
     // Includes stable keys for warehouse joins: policy_key, allocation_key,
-    // plus decision_id, type ("decision"|"exposure"), assignment_id, and any
-    // filtered-context properties spread to the top level.
+    // plus decision_id, type ("decision"|"exposure"), assignment_id, the
+    // propensity columns (bucket, propensity, model_version, config_version),
+    // and any filtered-context properties spread to the top level.
     fwrite(STDOUT, json_encode($row, JSON_PRETTY_PRINT) . "\n");
 };
 

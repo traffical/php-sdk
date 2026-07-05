@@ -145,6 +145,8 @@ final class ResolutionEngine
 
             $matchedPolicy = null;
             $matchedAllocation = null;
+            $matchedProbability = null;
+            $matchedModelVersion = null;
 
             foreach ($layer->policies as $policy) {
                 if ($policy->state !== 'running') {
@@ -163,13 +165,18 @@ final class ResolutionEngine
 
                 // Contextual model scoring overrides bucket-based allocation.
                 if ($policy->contextualModel !== null) {
-                    $ctxAllocation = Contextual::resolvePolicy($policy, $context, $layerUnitValue);
-                    if ($ctxAllocation !== null) {
+                    $ctxSelection = Contextual::resolvePolicyWithProbability($policy, $context, $layerUnitValue);
+                    if ($ctxSelection !== null) {
                         $matchedPolicy = $policy;
-                        $matchedAllocation = $ctxAllocation;
+                        $matchedAllocation = $ctxSelection->allocation;
+                        $matchedProbability = $ctxSelection->probability;
+                        // Prefer the bundle model's generatedAt; fall back to
+                        // the policy stateVersion for bundles that predate the
+                        // contextualModel timestamp.
+                        $matchedModelVersion = $policy->contextualModel->modelVersion ?? $policy->stateVersion;
                         $matchedPolicies[] = $policy;
                         if ($hasParams) {
-                            self::applyOverrides($assignments, $ctxAllocation->overrides);
+                            self::applyOverrides($assignments, $ctxSelection->allocation->overrides);
                         }
                         break;
                     }
@@ -179,10 +186,11 @@ final class ResolutionEngine
                     $result = self::resolvePerEntityPolicy($bundle, $policy, $context, $layerUnitValue);
                     if ($result !== null) {
                         $matchedPolicy = $policy;
-                        $matchedAllocation = $result;
+                        $matchedAllocation = $result->allocation;
+                        $matchedProbability = $result->probability;
                         $matchedPolicies[] = $policy;
                         if ($hasParams && $policy->entityConfig->dynamicAllocations === null) {
-                            self::applyOverrides($assignments, $result->overrides);
+                            self::applyOverrides($assignments, $result->allocation->overrides);
                         }
                         break;
                     }
@@ -213,6 +221,15 @@ final class ResolutionEngine
                     if ($allocation !== null) {
                         $matchedPolicy = $policy;
                         $matchedAllocation = $allocation;
+                        // Bucket-range adaptive policies (thompson_bernoulli /
+                        // epsilon_greedy / ucb1): the propensity is the chosen
+                        // allocation's bucket-range share. Static policies
+                        // omit the probability entirely.
+                        if ($policy->kind === 'adaptive' && $bundle->hashing->bucketCount > 0) {
+                            $matchedProbability =
+                                ($allocation->bucketRange[1] - $allocation->bucketRange[0] + 1)
+                                / $bundle->hashing->bucketCount;
+                        }
                         $matchedPolicies[] = $policy;
                         if ($hasParams) {
                             self::applyOverrides($assignments, $allocation->overrides);
@@ -233,6 +250,13 @@ final class ResolutionEngine
                 unitKey: $layerUnitKey,
                 unitKeyValue: $layerUnitKey !== null ? $layerUnitValue : null,
                 attributionOnly: $hasParams ? null : true,
+                // The events schema requires probability in (0, 1]; omit (never
+                // clamp) anything outside that range — the degenerate zero-weight
+                // fallback of WeightedSelection or malformed entity weights.
+                probability: $matchedProbability !== null && $matchedProbability > 0 && $matchedProbability <= 1
+                    ? $matchedProbability
+                    : null,
+                modelVersion: $matchedModelVersion,
             );
         }
 
@@ -254,6 +278,8 @@ final class ResolutionEngine
 
     /**
      * Resolves a per-entity (bundle-mode) policy using weighted selection.
+     * The returned selection carries the weight the SDK actually used, which
+     * is logged as the propensity of the choice.
      *
      * @param array<string, mixed> $context
      */
@@ -262,7 +288,7 @@ final class ResolutionEngine
         BundlePolicy $policy,
         array $context,
         string $unitKeyValue,
-    ): ?BundleAllocation {
+    ): ?AllocationSelection {
         $entityConfig = $policy->entityConfig;
         if ($entityConfig === null) {
             return null;
@@ -302,7 +328,10 @@ final class ResolutionEngine
         $seed = $entityId . ':' . $unitKeyValue . ':' . $policy->id;
         $selectedIndex = WeightedSelection::select($weights, $seed);
 
-        return $allocations[$selectedIndex];
+        return new AllocationSelection(
+            allocation: $allocations[$selectedIndex],
+            probability: $weights[$selectedIndex],
+        );
     }
 
     /**

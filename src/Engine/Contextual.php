@@ -111,6 +111,21 @@ final class Contextual
         array $context,
         string $unitKeyValue,
     ): ?BundleAllocation {
+        return self::resolvePolicyWithProbability($policy, $context, $unitKeyValue)?->allocation;
+    }
+
+    /**
+     * Like {@see resolvePolicy()} but also returns the floored-softmax
+     * probability of the CHOSEN allocation — the propensity logged on layer
+     * entries for off-policy (IPS/DR) training.
+     *
+     * @param array<string, mixed> $context
+     */
+    public static function resolvePolicyWithProbability(
+        BundlePolicy $policy,
+        array $context,
+        string $unitKeyValue,
+    ): ?AllocationSelection {
         $model = $policy->contextualModel;
         if ($model === null) {
             return null;
@@ -126,7 +141,10 @@ final class Contextual
         $seed = 'ctx:' . $unitKeyValue . ':' . $policy->id;
         $selectedIndex = WeightedSelection::select($floored, $seed);
 
-        return $policy->allocations[$selectedIndex];
+        return new AllocationSelection(
+            allocation: $policy->allocations[$selectedIndex],
+            probability: $floored[$selectedIndex],
+        );
     }
 
     /**

@@ -73,6 +73,16 @@ final class Json
     /**
      * @param array<string, mixed> $data
      */
+    public static function floatOrNull(array $data, string $key): ?float
+    {
+        $value = $data[$key] ?? null;
+
+        return is_numeric($value) ? (float) $value : null;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
     public static function bool(array $data, string $key, bool $default = false): bool
     {
         $value = $data[$key] ?? null;

@@ -27,6 +27,8 @@ final class ExposureEvent implements TrackableEvent
         public readonly ?string $id = null,
         public readonly ?string $sdkName = null,
         public readonly ?string $sdkVersion = null,
+        /** Config bundle version the SDK evaluated against. */
+        public readonly ?string $configVersion = null,
     ) {
     }
 
@@ -51,6 +53,9 @@ final class ExposureEvent implements TrackableEvent
         ];
         if ($this->context !== null) {
             $out['context'] = $this->context;
+        }
+        if ($this->configVersion !== null) {
+            $out['configVersion'] = $this->configVersion;
         }
 
         return $out;

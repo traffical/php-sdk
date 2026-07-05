@@ -26,6 +26,16 @@ final class LayerResolution
         public readonly ?string $unitKeyValue = null,
         /** True when resolved for attribution only (no requested parameters). */
         public readonly ?bool $attributionOnly = null,
+        /**
+         * Propensity of the CHOSEN allocation at decision time, in (0, 1].
+         * linear_contextual: the floored-softmax probability of the chosen
+         * allocation. Other adaptive policies: the chosen allocation's
+         * bucket-range share. Per-entity bundle-mode policies: the weight the
+         * SDK actually used. Omitted (null) for static policies.
+         */
+        public readonly ?float $probability = null,
+        /** Only for linear_contextual: model timestamp of the coefficients used. */
+        public readonly ?string $modelVersion = null,
     ) {
     }
 
@@ -52,6 +62,12 @@ final class LayerResolution
         }
         if ($this->allocationKey !== null) {
             $out['allocationKey'] = $this->allocationKey;
+        }
+        if ($this->probability !== null) {
+            $out['probability'] = $this->probability;
+        }
+        if ($this->modelVersion !== null) {
+            $out['modelVersion'] = $this->modelVersion;
         }
         if ($this->unitKey !== null) {
             $out['unitKey'] = $this->unitKey;
@@ -82,6 +98,8 @@ final class LayerResolution
             unitKey: Json::strOrNull($data, 'unitKey'),
             unitKeyValue: Json::strOrNull($data, 'unitKeyValue'),
             attributionOnly: isset($data['attributionOnly']) ? Json::bool($data, 'attributionOnly') : null,
+            probability: Json::floatOrNull($data, 'probability'),
+            modelVersion: Json::strOrNull($data, 'modelVersion'),
         );
     }
 }

@@ -48,6 +48,14 @@ final class AssignmentLogEntry
         public readonly ?string $anonymousId = null,
         /** Unique id for this assignment log entry (asn_…). */
         public readonly ?string $id = null,
+        /** Bucket computed for the layer this assignment came from. */
+        public readonly ?int $bucket = null,
+        /** Propensity of the chosen allocation at decision time ((0, 1]); adaptive policies only. */
+        public readonly ?float $probability = null,
+        /** Only for linear_contextual: model timestamp of the coefficients used. */
+        public readonly ?string $modelVersion = null,
+        /** Config bundle version the SDK evaluated against. */
+        public readonly ?string $configVersion = null,
     ) {
     }
 
@@ -79,6 +87,10 @@ final class AssignmentLogEntry
             'decisionId' => $this->decisionId,
             'anonymousId' => $this->anonymousId,
             'id' => $this->id,
+            'bucket' => $this->bucket,
+            'probability' => $this->probability,
+            'modelVersion' => $this->modelVersion,
+            'configVersion' => $this->configVersion,
         ];
     }
 }

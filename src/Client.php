@@ -142,27 +142,15 @@ final class Client implements PluginHost
                 $decision = new DecisionResult(
                     decisionId: $resp->decisionId,
                     assignments: $this->mergeServerAssignments($defaults, $resp->assignments),
-                    metadata: $resp->metadata,
+                    // Snapshot the state version this resolve response was
+                    // evaluated against; events stamp from the snapshot.
+                    metadata: $resp->metadata->withConfigVersion($resp->stateVersion),
                 );
             } else {
-                $decision = ResolutionEngine::decide(
-                    $this->getBundle(),
-                    $context,
-                    $defaults,
-                    null,
-                    $this->ids->decision(),
-                    $timestamp,
-                );
+                $decision = $this->decideLocally($context, $defaults, $timestamp);
             }
         } else {
-            $decision = ResolutionEngine::decide(
-                $this->getBundle(),
-                $context,
-                $defaults,
-                null,
-                $this->ids->decision(),
-                $timestamp,
-            );
+            $decision = $this->decideLocally($context, $defaults, $timestamp);
         }
 
         $this->cacheDecision($decision);
@@ -207,6 +195,7 @@ final class Client implements PluginHost
             id: $this->ids->exposure(),
             sdkName: $this->options->sdkName,
             sdkVersion: $this->options->sdkVersion,
+            configVersion: $decision->metadata->configVersion,
         );
 
         if ($this->plugins->runExposure($event)) {
@@ -315,6 +304,35 @@ final class Client implements PluginHost
     // Internals
     // =========================================================================
 
+    /**
+     * Resolves a decision against the local bundle and snapshots the config
+     * version the SDK evaluated against into the decision metadata. Decision,
+     * exposure, and assignment-log emissions all stamp `configVersion` from
+     * that snapshot so a config refresh between decide() and trackExposure()
+     * cannot skew it. Omitted on cold start (no bundle yet).
+     *
+     * @param array<string, mixed> $context
+     * @param array<string, mixed> $defaults
+     */
+    private function decideLocally(array $context, array $defaults, string $timestamp): DecisionResult
+    {
+        $bundle = $this->getBundle();
+        $decision = ResolutionEngine::decide(
+            $bundle,
+            $context,
+            $defaults,
+            null,
+            $this->ids->decision(),
+            $timestamp,
+        );
+
+        return new DecisionResult(
+            decisionId: $decision->decisionId,
+            assignments: $decision->assignments,
+            metadata: $decision->metadata->withConfigVersion($bundle?->version),
+        );
+    }
+
     private function emitAssignmentLogEntries(DecisionResult $decision, AssignmentType $type): void
     {
         if ($this->assignmentLogger === null) {
@@ -324,6 +342,8 @@ final class Client implements PluginHost
         if ($unitKey === '') {
             return;
         }
+
+        $configVersion = $decision->metadata->configVersion;
 
         foreach ($decision->metadata->layers as $layer) {
             if ($layer->policyId === null || $layer->allocationName === null) {
@@ -356,6 +376,10 @@ final class Client implements PluginHost
                 decisionId: $decision->decisionId,
                 anonymousId: null,
                 id: $this->ids->assignment(),
+                bucket: $layer->bucket >= 0 ? $layer->bucket : null,
+                probability: $layer->probability,
+                modelVersion: $layer->modelVersion,
+                configVersion: $configVersion,
             ));
         }
     }
@@ -392,6 +416,7 @@ final class Client implements PluginHost
             context: $decision->metadata->filteredContext,
             sdkName: $this->options->sdkName,
             sdkVersion: $this->options->sdkVersion,
+            configVersion: $decision->metadata->configVersion,
         ));
     }
 

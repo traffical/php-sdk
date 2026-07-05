@@ -21,7 +21,29 @@ final class DecisionMetadata
         public readonly string $unitKeyValue,
         public readonly array $layers,
         public readonly ?array $filteredContext = null,
+        /**
+         * Config version the SDK evaluated against, snapshotted at decision
+         * time: the bundle version (bundle mode) or the resolve response's
+         * stateVersion (server mode). Decision/exposure events and assignment
+         * rows are stamped from this snapshot, not the version current at
+         * event time. Null on cold start (no config yet).
+         */
+        public readonly ?string $configVersion = null,
     ) {
+    }
+
+    /**
+     * Returns a copy carrying the decision-time config version snapshot.
+     */
+    public function withConfigVersion(?string $configVersion): self
+    {
+        return new self(
+            timestamp: $this->timestamp,
+            unitKeyValue: $this->unitKeyValue,
+            layers: $this->layers,
+            filteredContext: $this->filteredContext,
+            configVersion: $configVersion,
+        );
     }
 
     /**
@@ -36,6 +58,9 @@ final class DecisionMetadata
         ];
         if ($this->filteredContext !== null) {
             $out['filteredContext'] = $this->filteredContext;
+        }
+        if ($this->configVersion !== null) {
+            $out['configVersion'] = $this->configVersion;
         }
 
         return $out;
@@ -56,6 +81,7 @@ final class DecisionMetadata
             filteredContext: isset($data['filteredContext']) && is_array($data['filteredContext'])
                 ? $data['filteredContext']
                 : null,
+            configVersion: Json::strOrNull($data, 'configVersion'),
         );
     }
 }

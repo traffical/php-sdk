@@ -59,7 +59,8 @@ use Traffical\Warehouse\WarehouseNativeLogger;
 $logger = new WarehouseNativeLogger(function (array $row): void {
     // $row keys: unit_key, policy_id, policy_key, allocation_name, allocation_key,
     // timestamp, layer_id, allocation_id, org_id, project_id, env, type,
-    // decision_id, anonymous_id, assignment_id, + any context properties.
+    // decision_id, anonymous_id, assignment_id, bucket, propensity,
+    // model_version, config_version, + any context properties.
     $db->insert('experiment_assignments', $row);
 });
 
@@ -84,6 +85,10 @@ $client = new Client(new ClientOptions(/* ... */, assignmentLogger: $logger));
 | `anonymousId` | Anonymous/device id (client SDKs); always `null` on the server |
 | `id` | Unique id for this assignment row (`asn_…`) |
 | `properties` | Filtered evaluation context — useful as covariates |
+| `bucket` | Bucket computed for the layer (`bucket` column) |
+| `probability` | Propensity of the chosen allocation at decision time, `(0, 1]`; adaptive policies only (`propensity` column) |
+| `modelVersion` | Model timestamp of the `linear_contextual` coefficients used (`model_version` column) |
+| `configVersion` | Config version the SDK evaluated against, snapshotted at decision time (`config_version` column) |
 
 ---
 
