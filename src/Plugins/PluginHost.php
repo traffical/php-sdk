@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Traffical\Plugins;
 
+use Traffical\TrackOptions;
 use Traffical\Types\DecisionResult;
 
 /**
@@ -29,7 +30,7 @@ interface PluginHost
     /**
      * @param array<string, mixed>|null $properties
      */
-    public function track(string $event, ?array $properties = null, ?string $decisionId = null, ?string $unitKey = null): void;
+    public function track(string $event, ?array $properties = null, ?TrackOptions $options = null): void;
 
     public function trackExposure(DecisionResult $decision): void;
 

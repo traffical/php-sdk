@@ -10,5 +10,5 @@ namespace Traffical;
 final class Version
 {
     public const SDK_NAME = 'php';
-    public const SDK_VERSION = '0.1.0';
+    public const SDK_VERSION = '0.2.0';
 }

@@ -42,8 +42,16 @@ printf("hero variant: %s (decision %s)\n", (string) $decision->assignments['hero
 
 $client->trackExposure($decision);
 
-// 3) Track a downstream conversion, attributed to the decision.
-$client->track('checkout_completed', ['revenue' => 49.0], $decision->decisionId);
+// 3) Track a downstream conversion, attributed to the decision. Optional
+//    arguments (decisionId, value, values, unitKey, eventTimestamp) live in a
+//    TrackOptions bag.
+$client->track('checkout_completed', ['orderId' => 'o-1001'], new Traffical\TrackOptions(
+    decisionId: $decision->decisionId,
+    value: 49.0,
+));
 
 // Events flush automatically on shutdown; flush explicitly in CLI/worker code.
 $client->flushEvents();
+
+// In a long-lived process, close() runs teardown and awaits a final flush.
+$client->close();

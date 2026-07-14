@@ -62,10 +62,10 @@ final class Conditions
 
                 return !self::includes($values, $contextValue);
 
-            // Relational ops (S3 strict typing / S5 omitted value): match ONLY
-            // when the context value is a number AND the condition threshold is
-            // a number. A numeric STRING threshold ("100") does not coerce, and
-            // an omitted threshold (null) never matches.
+                // Relational ops (S3 strict typing / S5 omitted value): match ONLY
+                // when the context value is a number AND the condition threshold is
+                // a number. A numeric STRING threshold ("100") does not coerce, and
+                // an omitted threshold (null) never matches.
             case 'gt':
                 return self::isNumber($contextValue) && self::isNumber($value)
                     && (float) $contextValue > (float) $value;

@@ -108,6 +108,7 @@ final class Json
      * empty maps and the array unchanged otherwise.
      *
      * @param array<string, mixed> $map
+     * @return \stdClass|array<string, mixed>
      */
     public static function map(array $map): \stdClass|array
     {

@@ -33,8 +33,7 @@ final class ConfigBundle
 
     /**
      * @param array<string, mixed> $data
-     */
-    /**
+     *
      * @throws MalformedBundleException when the bundle is structurally unusable
      *     (S8) — e.g. a missing `hashing` block, empty unitKey, or bucketCount
      *     below 1. Callers catch this and fail open to a good bundle/defaults.
@@ -79,7 +78,8 @@ final class ConfigBundle
     }
 
     /**
-     * @throws JsonException
+     * @throws JsonException when the payload is not valid JSON
+     * @throws MalformedBundleException when the bundle is structurally unusable (S8)
      */
     public static function fromJson(string $json): self
     {
