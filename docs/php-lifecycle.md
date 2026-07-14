@@ -15,10 +15,10 @@ On construction, the `Client` registers a shutdown handler:
 4. `flush()` is **fire-and-forget**: transport errors are caught and logged via PSR-3; they never surface to
    the user or throw during shutdown.
 
-This deliberately avoids the patterns other SDKs use:
+This deliberately avoids two patterns seen in other SDKs:
 
-- No `shell_exec()` to spawn a background curl (LaunchDarkly-style) — no process-spawn surface.
-- No blocking work in `__destruct()` (Amplitude-style) that would delay the response.
+- No `shell_exec()` to spawn a background curl — no process-spawn surface.
+- No blocking work in `__destruct()` that would delay the response.
 
 ## Auto-flush threshold
 

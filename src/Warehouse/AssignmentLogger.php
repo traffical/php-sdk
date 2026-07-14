@@ -8,9 +8,9 @@ use Traffical\Types\AssignmentLogEntry;
 
 /**
  * Receives structured assignment log entries for warehouse-native analytics
- * (the Eppo-style "bring your own pipeline" pattern). Implement this — or pass
- * a plain `callable(AssignmentLogEntry): void` to the client — to route
- * assignments to Segment, RudderStack, an HTTP API, or a direct DB write.
+ * (the "bring your own pipeline" pattern). Implement this — or pass a plain
+ * `callable(AssignmentLogEntry): void` to the client — to route assignments to
+ * your CDP, an HTTP API, or a direct data-warehouse write.
  */
 interface AssignmentLogger
 {

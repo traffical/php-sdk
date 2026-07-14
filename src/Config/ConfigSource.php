@@ -7,9 +7,9 @@ namespace Traffical\Config;
 use Traffical\Types\ConfigBundle;
 
 /**
- * A source of config bundles. Modeled on LaunchDarkly's FeatureRequester:
- * implementations decide where the bundle comes from (HTTP, file, inline,
- * cache) and the client is agnostic to the delivery mechanism.
+ * A source of config bundles: implementations decide where the bundle comes
+ * from (HTTP, file, inline, cache) and the client is agnostic to the delivery
+ * mechanism.
  */
 interface ConfigSource
 {

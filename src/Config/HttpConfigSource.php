@@ -13,6 +13,7 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Traffical\Types\ConfigBundle;
+use Traffical\Types\MalformedBundleException;
 
 /**
  * Fetches the config bundle over HTTP from the Traffical control plane using a
@@ -84,6 +85,12 @@ final class HttpConfigSource implements ConfigSource
             $bundle = ConfigBundle::fromJson((string) $response->getBody());
         } catch (JsonException $e) {
             $this->logger->warning('[Traffical] Config response was not valid JSON', ['error' => $e->getMessage()]);
+
+            return $this->lastBundle;
+        } catch (MalformedBundleException $e) {
+            // S8: a structurally-bad bundle must be discarded, never replace the
+            // last-good one. Keep serving what we have (or nothing).
+            $this->logger->warning('[Traffical] Discarding malformed config bundle', ['error' => $e->getMessage()]);
 
             return $this->lastBundle;
         }

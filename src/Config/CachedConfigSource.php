@@ -12,8 +12,8 @@ use Traffical\Types\ConfigBundle;
  * Wraps another {@see ConfigSource} with a PSR-16 shared cache keyed by
  * projectId:env. Under PHP-FPM this lets all worker processes share a single
  * bundle and avoid refetching on every request: the inner source is only
- * consulted when the cache entry is missing or its TTL has lapsed (the lazy
- * refresh pattern Eppo uses with its 30s cache).
+ * consulted when the cache entry is missing or its TTL has lapsed (a lazy
+ * refresh pattern with a short shared-cache TTL).
  */
 final class CachedConfigSource implements ConfigSource
 {

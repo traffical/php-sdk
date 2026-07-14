@@ -427,7 +427,17 @@ final class Client implements PluginHost
         }
         $this->bundleLoaded = true;
 
-        $loaded = $this->configSource?->load();
+        // S8 fail-open: a config source MUST never crash decide()/getParams().
+        // Sources already discard malformed bundles internally; this is a final
+        // guard for a custom ConfigSource that throws — degrade to localConfig.
+        try {
+            $loaded = $this->configSource?->load();
+        } catch (\Throwable $e) {
+            $this->logger->warning('[Traffical] Config source threw; failing open to localConfig', [
+                'error' => $e->getMessage(),
+            ]);
+            $loaded = null;
+        }
         $this->bundle = $loaded ?? $this->options->localConfig;
 
         if ($this->bundle !== null) {
