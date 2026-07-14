@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Traffical\Transport;
 
 use Http\Discovery\Psr17FactoryDiscovery;
-use Http\Discovery\Psr18ClientDiscovery;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Traffical\Http\HttpClientFactory;
 use Traffical\Types\TrackableEvent;
 
 /**
@@ -47,8 +47,10 @@ final class BatchingEventTransport implements EventTransport
         ?RequestFactoryInterface $requestFactory = null,
         ?StreamFactoryInterface $streamFactory = null,
         ?LoggerInterface $logger = null,
+        /** Event-delivery request timeout (ms), applied to auto-discovered Guzzle clients. */
+        private readonly int $timeoutMs = 10_000,
     ) {
-        $this->httpClient = $httpClient ?? Psr18ClientDiscovery::find();
+        $this->httpClient = HttpClientFactory::resolve($httpClient, $this->timeoutMs);
         $this->requestFactory = $requestFactory ?? Psr17FactoryDiscovery::findRequestFactory();
         $this->streamFactory = $streamFactory ?? Psr17FactoryDiscovery::findStreamFactory();
         $this->logger = $logger ?? new NullLogger();

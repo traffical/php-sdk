@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Traffical\Config;
 
 use Http\Discovery\Psr17FactoryDiscovery;
-use Http\Discovery\Psr18ClientDiscovery;
 use JsonException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Traffical\Http\HttpClientFactory;
 use Traffical\Types\ConfigBundle;
 use Traffical\Types\MalformedBundleException;
 
@@ -38,8 +38,10 @@ final class HttpConfigSource implements ConfigSource
         ?ClientInterface $httpClient = null,
         ?RequestFactoryInterface $requestFactory = null,
         ?LoggerInterface $logger = null,
+        /** Config-fetch request timeout (ms), applied to auto-discovered Guzzle clients. */
+        private readonly int $timeoutMs = 10_000,
     ) {
-        $this->httpClient = $httpClient ?? Psr18ClientDiscovery::find();
+        $this->httpClient = HttpClientFactory::resolve($httpClient, $this->timeoutMs);
         $this->requestFactory = $requestFactory ?? Psr17FactoryDiscovery::findRequestFactory();
         $this->logger = $logger ?? new NullLogger();
     }

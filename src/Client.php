@@ -646,6 +646,7 @@ final class Client implements PluginHost
             requestFactory: $this->options->requestFactory,
             streamFactory: $this->options->streamFactory,
             logger: $this->logger,
+            timeoutMs: $this->options->eventsTimeoutMs,
         );
     }
 
@@ -663,6 +664,7 @@ final class Client implements PluginHost
             httpClient: $this->options->httpClient,
             requestFactory: $this->options->requestFactory,
             logger: $this->logger,
+            timeoutMs: $this->options->configTimeoutMs,
         );
 
         if ($this->options->cache !== null) {
@@ -690,6 +692,7 @@ final class Client implements PluginHost
             requestFactory: $this->options->requestFactory,
             streamFactory: $this->options->streamFactory,
             logger: $this->logger,
+            timeoutMs: $this->options->resolveTimeoutMs,
         );
     }
 
