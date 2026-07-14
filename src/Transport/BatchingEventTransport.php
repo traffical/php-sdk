@@ -17,8 +17,10 @@ use Traffical\Types\TrackableEvent;
 /**
  * Buffers events in memory and POSTs them to /v1/events/batch via a PSR-18
  * client. Auto-flushes once the batch size is reached; otherwise the host
- * flushes on shutdown (see {@see \Traffical\Client}). All delivery is
- * fire-and-forget: failures are logged via PSR-3 and never thrown.
+ * flushes on shutdown (see {@see \Traffical\Client}). Delivery is
+ * fire-and-forget: transient failures are logged via PSR-3 and never thrown,
+ * and an HTTP 401 permanently disables delivery for the process (S8 auth
+ * kill-switch) rather than retrying a credential that will never succeed.
  */
 final class BatchingEventTransport implements EventTransport
 {
@@ -29,6 +31,13 @@ final class BatchingEventTransport implements EventTransport
 
     /** @var list<TrackableEvent> */
     private array $queue = [];
+
+    /**
+     * Auth kill-switch (S8): set on an HTTP 401. Once disabled, the transport
+     * stops buffering and sending for the rest of the process lifetime rather
+     * than spinning on a credential that will never succeed.
+     */
+    private bool $disabled = false;
 
     public function __construct(
         private readonly string $baseUrl,
@@ -47,6 +56,10 @@ final class BatchingEventTransport implements EventTransport
 
     public function log(TrackableEvent $event): void
     {
+        if ($this->disabled) {
+            return;
+        }
+
         $this->queue[] = $event;
 
         if (count($this->queue) >= $this->batchSize) {
@@ -56,7 +69,7 @@ final class BatchingEventTransport implements EventTransport
 
     public function flush(): void
     {
-        if (count($this->queue) === 0) {
+        if ($this->disabled || count($this->queue) === 0) {
             return;
         }
 
@@ -82,7 +95,13 @@ final class BatchingEventTransport implements EventTransport
         try {
             $response = $this->httpClient->sendRequest($request);
             $status = $response->getStatusCode();
-            if ($status < 200 || $status >= 300) {
+            if ($status === 401) {
+                // Auth kill-switch (S8): a bad credential will never succeed —
+                // stop delivery for the rest of the process, dropping the batch.
+                $this->disabled = true;
+                $this->queue = [];
+                $this->logger->warning('[Traffical] Event delivery disabled after HTTP 401 (bad API key)');
+            } elseif ($status < 200 || $status >= 300) {
                 $this->logger->warning('[Traffical] Event batch returned non-2xx', ['status' => $status]);
             }
         } catch (ClientExceptionInterface $e) {
