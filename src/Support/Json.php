@@ -100,4 +100,17 @@ final class Json
 
         return is_array($value) ? $value : [];
     }
+
+    /**
+     * Represents a JSON *map* field for serialization: an empty PHP array
+     * encodes as a JSON array (`[]`), but the events schema types these fields
+     * as objects, so an empty map must serialize as `{}`. Returns a stdClass for
+     * empty maps and the array unchanged otherwise.
+     *
+     * @param array<string, mixed> $map
+     */
+    public static function map(array $map): \stdClass|array
+    {
+        return $map === [] ? new \stdClass() : $map;
+    }
 }
