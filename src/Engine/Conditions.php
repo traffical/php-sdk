@@ -62,20 +62,24 @@ final class Conditions
 
                 return !self::includes($values, $contextValue);
 
+            // Relational ops (S3 strict typing / S5 omitted value): match ONLY
+            // when the context value is a number AND the condition threshold is
+            // a number. A numeric STRING threshold ("100") does not coerce, and
+            // an omitted threshold (null) never matches.
             case 'gt':
-                return self::isNumber($contextValue) && is_numeric($value)
+                return self::isNumber($contextValue) && self::isNumber($value)
                     && (float) $contextValue > (float) $value;
 
             case 'gte':
-                return self::isNumber($contextValue) && is_numeric($value)
+                return self::isNumber($contextValue) && self::isNumber($value)
                     && (float) $contextValue >= (float) $value;
 
             case 'lt':
-                return self::isNumber($contextValue) && is_numeric($value)
+                return self::isNumber($contextValue) && self::isNumber($value)
                     && (float) $contextValue < (float) $value;
 
             case 'lte':
-                return self::isNumber($contextValue) && is_numeric($value)
+                return self::isNumber($contextValue) && self::isNumber($value)
                     && (float) $contextValue <= (float) $value;
 
             case 'contains':
@@ -127,10 +131,15 @@ final class Conditions
             }
 
             if (is_array($current)) {
-                if (!array_key_exists($part, $current)) {
+                if (array_key_exists($part, $current)) {
+                    $current = $current[$part];
+                } elseif ($part === 'length' && array_is_list($current)) {
+                    // JS arrays expose `.length`; mirror it for the `tags.length`
+                    // style predicates the reference engine supports.
+                    $current = count($current);
+                } else {
                     return Undefined::instance();
                 }
-                $current = $current[$part];
             } else {
                 return Undefined::instance();
             }

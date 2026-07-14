@@ -23,11 +23,12 @@ final class BundleContextualModel
         public readonly float $defaultAllocationScore,
         public readonly array $coefficients,
         /**
-         * Model timestamp of the coefficients — the bundle's `generatedAt`
-         * (trainingSummary.generatedAt), with `modelVersion` accepted as an
-         * alias. Emitted on exposure/decision layer entries as `modelVersion`;
-         * when the bundle carries neither, the emission site falls back to the
-         * policy's `stateVersion`.
+         * Model timestamp of the coefficients (S7) — the bundle's `generatedAt`
+         * (trainingSummary.generatedAt), with the legacy `modelVersion` label as
+         * the only fallback. Emitted on exposure/decision layer entries as
+         * `modelVersion`. When the bundle carries NEITHER, this stays null and
+         * the emission site omits `modelVersion` entirely — there is no further
+         * fallback to the policy's `stateVersion`.
          */
         public readonly ?string $modelVersion = null,
     ) {

@@ -28,11 +28,16 @@ final class SpecVectorsTest extends TestCase
         $files = [
             'expected_basic.json',
             'expected_conditions.json',
+            'expected_conditions_omitted.json',
             'expected_contextual.json',
+            'expected_contextual_boundary.json',
+            'expected_contextual_gamma_zero.json',
+            'expected_contextual_high_floor.json',
             'expected_edge_policies.json',
             'expected_per_layer_unit_key.json',
             'expected_unicode.json',
-            'expected_contextual_boundary.json',
+            'expected_empty_unit_key.json',
+            'expected_numeric_unit_key.json',
         ];
 
         foreach ($files as $file) {
@@ -112,7 +117,10 @@ final class SpecVectorsTest extends TestCase
                 // Cross-check the standalone bucket helper for non -1 buckets
                 // that use the project unit key.
                 if ((int) $info['bucket'] >= 0 && $layer->unitKey === null) {
-                    $unitValue = (string) ($context[$bundle->hashing->unitKey] ?? '');
+                    // Canonical S2 stringification (matches the engine), not a
+                    // raw (string) cast — numeric unit keys must agree.
+                    $rawUnit = $context[$bundle->hashing->unitKey] ?? '';
+                    $unitValue = $rawUnit === '' ? '' : \Traffical\Engine\Strings::jsString($rawUnit);
                     self::assertSame(
                         (int) $info['bucket'],
                         Bucket::compute($unitValue, $layerId, $bundle->hashing->bucketCount),

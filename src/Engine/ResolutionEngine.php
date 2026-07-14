@@ -122,6 +122,18 @@ final class ResolutionEngine
         foreach ($bundle->layers as $layer) {
             $hasParams = !empty($paramsByLayer[$layer->id]);
 
+            // S1: an empty/whitespace-only override is invalid — skip the layer
+            // (bucket -1), serve defaults, record no exposure, and emit NO
+            // unitKey/unitKeyValue (never fall back to the project unit key).
+            if ($layer->invalidUnitKeyOverride) {
+                $layers[] = new LayerResolution(
+                    layerId: $layer->id,
+                    bucket: -1,
+                    attributionOnly: $hasParams ? null : true,
+                );
+                continue;
+            }
+
             $layerUnitKey = $layer->unitKey;
             if ($layerUnitKey !== null) {
                 $raw = $context[$layerUnitKey] ?? null;
@@ -170,10 +182,12 @@ final class ResolutionEngine
                         $matchedPolicy = $policy;
                         $matchedAllocation = $ctxSelection->allocation;
                         $matchedProbability = $ctxSelection->probability;
-                        // Prefer the bundle model's generatedAt; fall back to
-                        // the policy stateVersion for bundles that predate the
-                        // contextualModel timestamp.
-                        $matchedModelVersion = $policy->contextualModel->modelVersion ?? $policy->stateVersion;
+                        // S7: modelVersion = generatedAt ?? modelVersion of the
+                        // contextual model. No further fallback to
+                        // policy.stateVersion — omit rather than emit a wrong
+                        // label. (BundleContextualModel already resolves
+                        // generatedAt ?? modelVersion into ->modelVersion.)
+                        $matchedModelVersion = $policy->contextualModel->modelVersion;
                         $matchedPolicies[] = $policy;
                         if ($hasParams) {
                             self::applyOverrides($assignments, $ctxSelection->allocation->overrides);
