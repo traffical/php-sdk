@@ -423,15 +423,13 @@ final class ResolutionEngine
         return count($filtered) > 0 ? $filtered : null;
     }
 
+    /**
+     * Canonical stringification of a context value for unit-key and entity-id
+     * derivation (S2). Numeric values route through the ECMAScript
+     * Number::toString rule so every SDK produces the same bucket.
+     */
     private static function stringify(mixed $value): string
     {
-        if (is_bool($value)) {
-            return $value ? 'true' : 'false';
-        }
-        if (is_scalar($value)) {
-            return (string) $value;
-        }
-
-        return '';
+        return Strings::jsString($value);
     }
 }
