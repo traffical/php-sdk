@@ -33,10 +33,17 @@ final class ConfigBundle
 
     /**
      * @param array<string, mixed> $data
+     *
+     * @throws MalformedBundleException when the bundle is structurally unusable
+     *     (S8) — e.g. a missing `hashing` block, empty unitKey, or bucketCount
+     *     below 1. Callers catch this and fail open to a good bundle/defaults.
      */
     public static function fromArray(array $data): self
     {
-        /** @var array{unitKey: string, bucketCount: int|float} $hashing */
+        if (!isset($data['hashing']) || !is_array($data['hashing'])) {
+            throw new MalformedBundleException('bundle is missing the hashing config');
+        }
+        /** @var array{unitKey?: mixed, bucketCount?: mixed} $hashing */
         $hashing = $data['hashing'];
         /** @var list<array{key: string, type: string, default: mixed, layerId: string, namespace?: string}> $parameters */
         $parameters = $data['parameters'] ?? [];
@@ -71,7 +78,8 @@ final class ConfigBundle
     }
 
     /**
-     * @throws JsonException
+     * @throws JsonException when the payload is not valid JSON
+     * @throws MalformedBundleException when the bundle is structurally unusable (S8)
      */
     public static function fromJson(string $json): self
     {

@@ -15,6 +15,7 @@ use Traffical\Dedup\AssignmentDedupStrategy;
 use Traffical\Dedup\AssignmentLoggerDedup;
 use Traffical\Dedup\CachedAssignmentLoggerDedup;
 use Traffical\Dedup\DecisionDeduplicator;
+use Traffical\Dedup\ExposureDedup;
 use Traffical\Engine\ResolutionEngine;
 use Traffical\Id\IdGenerator;
 use Traffical\Plugins\Plugin;
@@ -53,6 +54,7 @@ final class Client implements PluginHost
     private readonly PluginManager $plugins;
     private readonly EventTransport $transport;
     private readonly DecisionDeduplicator $decisionDedup;
+    private readonly ?ExposureDedup $exposureDedup;
     private readonly ?AssignmentLogger $assignmentLogger;
     private readonly ?AssignmentDedupStrategy $assignmentDedup;
     private readonly ?ConfigSource $configSource;
@@ -81,6 +83,9 @@ final class Client implements PluginHost
         $this->assignmentLogger = $options->assignmentLogger;
         $this->assignmentDedup = $this->buildAssignmentDedup();
         $this->decisionDedup = new DecisionDeduplicator();
+        $this->exposureDedup = $options->deduplicateExposures
+            ? new ExposureDedup($options->exposureSessionTtlMs)
+            : null;
         $this->transport = $this->buildTransport();
         $this->configSource = $options->evaluationMode === 'server' ? null : $this->buildConfigSource();
         $this->decisionClient = $options->evaluationMode === 'server' ? $this->buildDecisionClient() : null;
@@ -182,6 +187,31 @@ final class Client implements PluginHost
             return;
         }
 
+        // S4: emit exactly ONE exposure event carrying only newly-exposed,
+        // non-attributionOnly layers. Session dedup suppresses a
+        // (unit, layer, allocation) already exposed this session; if nothing
+        // survives, emit no event at all.
+        $exposedLayers = [];
+        foreach ($decision->metadata->layers as $layer) {
+            if ($layer->attributionOnly === true) {
+                continue;
+            }
+            if ($layer->policyId === null || $layer->allocationName === null) {
+                continue;
+            }
+            if ($this->exposureDedup !== null) {
+                $key = ExposureDedup::key($unitKey, $layer->layerId, $layer->allocationName);
+                if (!$this->exposureDedup->shouldEmit($key)) {
+                    continue;
+                }
+            }
+            $exposedLayers[] = $layer;
+        }
+
+        if (count($exposedLayers) === 0) {
+            return;
+        }
+
         $event = new ExposureEvent(
             decisionId: $decision->decisionId,
             orgId: $this->options->orgId,
@@ -190,7 +220,7 @@ final class Client implements PluginHost
             unitKey: $unitKey,
             timestamp: $this->nowIso(),
             assignments: $decision->assignments,
-            layers: $decision->metadata->layers,
+            layers: $exposedLayers,
             context: $decision->metadata->filteredContext,
             id: $this->ids->exposure(),
             sdkName: $this->options->sdkName,
@@ -206,17 +236,36 @@ final class Client implements PluginHost
     /**
      * Tracks a user event (conversion, engagement, etc.).
      *
+     * Optional arguments live in a {@see TrackOptions} bag (A1) so `value`,
+     * `values`, `decisionId`, `unitKey`, and `eventTimestamp` are available
+     * consistently across every SDK.
+     *
      * @param array<string, mixed>|null $properties
      */
-    public function track(string $event, ?array $properties = null, ?string $decisionId = null, ?string $unitKey = null): void
+    public function track(string $event, ?array $properties = null, ?TrackOptions $options = null): void
     {
         if ($this->options->disableCloudEvents) {
             return;
         }
 
+        $options ??= new TrackOptions();
+
+        // Explicit options.value wins; otherwise fall back to a numeric
+        // properties['value'] for backward-compatible ergonomics.
         $value = null;
-        if ($properties !== null && isset($properties['value']) && (is_int($properties['value']) || is_float($properties['value']))) {
+        if ($options->value !== null) {
+            $value = (float) $options->value;
+        } elseif ($properties !== null && isset($properties['value']) && (is_int($properties['value']) || is_float($properties['value']))) {
             $value = (float) $properties['value'];
+        }
+
+        /** @var array<string, float>|null $values */
+        $values = null;
+        if ($options->values !== null) {
+            $values = [];
+            foreach ($options->values as $k => $v) {
+                $values[(string) $k] = (float) $v;
+            }
         }
 
         $trackEvent = new TrackEvent(
@@ -224,15 +273,17 @@ final class Client implements PluginHost
             orgId: $this->options->orgId,
             projectId: $this->options->projectId,
             env: $this->options->env,
-            unitKey: $unitKey ?? '',
+            unitKey: $options->unitKey ?? '',
             timestamp: $this->nowIso(),
             value: $value,
             properties: $properties,
-            decisionId: $decisionId,
-            attribution: $this->getAttributionFromCache($decisionId),
+            decisionId: $options->decisionId,
+            values: $values,
+            attribution: $this->getAttributionFromCache($options->decisionId),
             id: $this->ids->trackEvent(),
             sdkName: $this->options->sdkName,
             sdkVersion: $this->options->sdkVersion,
+            eventTimestamp: $options->eventTimestamp,
         );
 
         if ($this->plugins->runTrack($trackEvent)) {
@@ -291,12 +342,15 @@ final class Client implements PluginHost
     }
 
     /**
-     * Flushes events and runs plugin teardown. Call at end of a long-lived
-     * process; for typical FPM requests the shutdown handler does this.
+     * The single teardown verb (A1). Runs plugin teardown and awaits a final
+     * event flush before returning. Call at the end of a long-lived process;
+     * for typical FPM requests the shutdown handler flushes automatically.
      */
-    public function destroy(): void
+    public function close(): void
     {
         $this->plugins->runDestroy();
+        // flushEvents() is synchronous over PSR-18, so this "awaits" the final
+        // flush by construction.
         $this->flushEvents();
     }
 
@@ -427,7 +481,17 @@ final class Client implements PluginHost
         }
         $this->bundleLoaded = true;
 
-        $loaded = $this->configSource?->load();
+        // S8 fail-open: a config source MUST never crash decide()/getParams().
+        // Sources already discard malformed bundles internally; this is a final
+        // guard for a custom ConfigSource that throws — degrade to localConfig.
+        try {
+            $loaded = $this->configSource?->load();
+        } catch (\Throwable $e) {
+            $this->logger->warning('[Traffical] Config source threw; failing open to localConfig', [
+                'error' => $e->getMessage(),
+            ]);
+            $loaded = null;
+        }
         $this->bundle = $loaded ?? $this->options->localConfig;
 
         if ($this->bundle !== null) {
@@ -537,11 +601,12 @@ final class Client implements PluginHost
         return new BatchingEventTransport(
             baseUrl: $this->options->baseUrl,
             apiKey: $this->options->apiKey,
-            batchSize: $this->options->eventBatchSize,
+            batchSize: $this->options->batchSize,
             httpClient: $this->options->httpClient,
             requestFactory: $this->options->requestFactory,
             streamFactory: $this->options->streamFactory,
             logger: $this->logger,
+            timeoutMs: $this->options->eventsTimeoutMs,
         );
     }
 
@@ -559,6 +624,7 @@ final class Client implements PluginHost
             httpClient: $this->options->httpClient,
             requestFactory: $this->options->requestFactory,
             logger: $this->logger,
+            timeoutMs: $this->options->configTimeoutMs,
         );
 
         if ($this->options->cache !== null) {
@@ -586,6 +652,7 @@ final class Client implements PluginHost
             requestFactory: $this->options->requestFactory,
             streamFactory: $this->options->streamFactory,
             logger: $this->logger,
+            timeoutMs: $this->options->resolveTimeoutMs,
         );
     }
 

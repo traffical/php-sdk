@@ -30,7 +30,15 @@ final class ClientOptions
 {
     public const DEFAULT_BASE_URL = 'https://sdk.traffical.io';
     public const DEFAULT_REFRESH_INTERVAL_MS = 60_000;
-    public const DEFAULT_EVENT_BATCH_SIZE = 10;
+    public const DEFAULT_FLUSH_INTERVAL_MS = 30_000;
+    public const DEFAULT_BATCH_SIZE = 10;
+    public const DEFAULT_CONFIG_TIMEOUT_MS = 10_000;
+    public const DEFAULT_EVENTS_TIMEOUT_MS = 10_000;
+    public const DEFAULT_RESOLVE_TIMEOUT_MS = 5_000;
+    public const DEFAULT_EXPOSURE_SESSION_TTL_MS = 1_800_000;
+
+    /** @deprecated Use DEFAULT_BATCH_SIZE. */
+    public const DEFAULT_EVENT_BATCH_SIZE = self::DEFAULT_BATCH_SIZE;
 
     public readonly ?AssignmentLogger $assignmentLogger;
 
@@ -51,7 +59,20 @@ final class ClientOptions
         public readonly bool $disableCloudEvents = false,
         public readonly bool $deduplicateAssignmentLogger = true,
         public readonly bool $trackDecisions = true,
-        public readonly int $eventBatchSize = self::DEFAULT_EVENT_BATCH_SIZE,
+        /** Events per delivery batch (canonical name; was eventBatchSize). */
+        public readonly int $batchSize = self::DEFAULT_BATCH_SIZE,
+        /** Event flush cadence (ms). PHP flushes on batch-full or request end. */
+        public readonly int $flushIntervalMs = self::DEFAULT_FLUSH_INTERVAL_MS,
+        /** Config-fetch request timeout (ms). */
+        public readonly int $configTimeoutMs = self::DEFAULT_CONFIG_TIMEOUT_MS,
+        /** Event-delivery request timeout (ms). */
+        public readonly int $eventsTimeoutMs = self::DEFAULT_EVENTS_TIMEOUT_MS,
+        /** Server-resolve request timeout (ms). */
+        public readonly int $resolveTimeoutMs = self::DEFAULT_RESOLVE_TIMEOUT_MS,
+        /** Exposure session-dedup on/off (S4), on by default. */
+        public readonly bool $deduplicateExposures = true,
+        /** Exposure session-dedup TTL (ms); default 30-minute session. */
+        public readonly int $exposureSessionTtlMs = self::DEFAULT_EXPOSURE_SESSION_TTL_MS,
         public readonly string $sdkName = Version::SDK_NAME,
         public readonly string $sdkVersion = Version::SDK_VERSION,
         public readonly ?ClientInterface $httpClient = null,
@@ -104,6 +125,46 @@ final class ClientOptions
     public function withTrackDecisions(bool $track): self
     {
         return $this->copy(trackDecisions: $track);
+    }
+
+    public function withBatchSize(int $batchSize): self
+    {
+        return $this->copy(batchSize: $batchSize);
+    }
+
+    public function withFlushIntervalMs(int $flushIntervalMs): self
+    {
+        return $this->copy(flushIntervalMs: $flushIntervalMs);
+    }
+
+    public function withRefreshIntervalMs(int $refreshIntervalMs): self
+    {
+        return $this->copy(refreshIntervalMs: $refreshIntervalMs);
+    }
+
+    public function withConfigTimeoutMs(int $configTimeoutMs): self
+    {
+        return $this->copy(configTimeoutMs: $configTimeoutMs);
+    }
+
+    public function withEventsTimeoutMs(int $eventsTimeoutMs): self
+    {
+        return $this->copy(eventsTimeoutMs: $eventsTimeoutMs);
+    }
+
+    public function withResolveTimeoutMs(int $resolveTimeoutMs): self
+    {
+        return $this->copy(resolveTimeoutMs: $resolveTimeoutMs);
+    }
+
+    public function withDeduplicateExposures(bool $dedup): self
+    {
+        return $this->copy(deduplicateExposures: $dedup);
+    }
+
+    public function withExposureSessionTtlMs(int $ttlMs): self
+    {
+        return $this->copy(exposureSessionTtlMs: $ttlMs);
     }
 
     public function withHttpClient(ClientInterface $client): self
@@ -164,11 +225,19 @@ final class ClientOptions
     private function copy(
         ?string $baseUrl = null,
         ?ConfigBundle $localConfig = null,
+        ?int $refreshIntervalMs = null,
         ?string $evaluationMode = null,
         AssignmentLogger|callable|null $assignmentLogger = null,
         ?bool $disableCloudEvents = null,
         ?bool $deduplicateAssignmentLogger = null,
         ?bool $trackDecisions = null,
+        ?int $batchSize = null,
+        ?int $flushIntervalMs = null,
+        ?int $configTimeoutMs = null,
+        ?int $eventsTimeoutMs = null,
+        ?int $resolveTimeoutMs = null,
+        ?bool $deduplicateExposures = null,
+        ?int $exposureSessionTtlMs = null,
         ?ClientInterface $httpClient = null,
         ?RequestFactoryInterface $requestFactory = null,
         ?StreamFactoryInterface $streamFactory = null,
@@ -186,13 +255,19 @@ final class ClientOptions
             apiKey: $this->apiKey,
             baseUrl: $baseUrl ?? $this->baseUrl,
             localConfig: $localConfig ?? $this->localConfig,
-            refreshIntervalMs: $this->refreshIntervalMs,
+            refreshIntervalMs: $refreshIntervalMs ?? $this->refreshIntervalMs,
             evaluationMode: $evaluationMode ?? $this->evaluationMode,
             assignmentLogger: $assignmentLogger ?? $this->assignmentLogger,
             disableCloudEvents: $disableCloudEvents ?? $this->disableCloudEvents,
             deduplicateAssignmentLogger: $deduplicateAssignmentLogger ?? $this->deduplicateAssignmentLogger,
             trackDecisions: $trackDecisions ?? $this->trackDecisions,
-            eventBatchSize: $this->eventBatchSize,
+            batchSize: $batchSize ?? $this->batchSize,
+            flushIntervalMs: $flushIntervalMs ?? $this->flushIntervalMs,
+            configTimeoutMs: $configTimeoutMs ?? $this->configTimeoutMs,
+            eventsTimeoutMs: $eventsTimeoutMs ?? $this->eventsTimeoutMs,
+            resolveTimeoutMs: $resolveTimeoutMs ?? $this->resolveTimeoutMs,
+            deduplicateExposures: $deduplicateExposures ?? $this->deduplicateExposures,
+            exposureSessionTtlMs: $exposureSessionTtlMs ?? $this->exposureSessionTtlMs,
             sdkName: $this->sdkName,
             sdkVersion: $this->sdkVersion,
             httpClient: $httpClient ?? $this->httpClient,

@@ -94,11 +94,18 @@ $variant = $decision->assignments['hero_variant'];
 // ...render the variant, then record that the user saw it:
 $client->trackExposure($decision);
 
-// Custom analytics events:
-$client->track('checkout_completed', ['revenue' => 49.0], $decision->decisionId);
+// Custom analytics events. Optional args (decisionId, value, values, unitKey,
+// eventTimestamp) live in a TrackOptions bag:
+$client->track('checkout_completed', ['orderId' => 'o-1001'], new Traffical\TrackOptions(
+    decisionId: $decision->decisionId,
+    value: 49.0,
+));
 
 // Flush is automatic on shutdown; call explicitly in worker/CLI contexts:
 $client->flushEvents();
+
+// In a long-lived process, close() runs teardown and awaits a final flush:
+$client->close();
 ```
 
 ## Server mode
@@ -185,12 +192,28 @@ with the fluent `with*()` methods (each returns a new instance):
 | `assignmentLogger` | `null` | BYO warehouse logger (callable or `AssignmentLogger`) |
 | `disableCloudEvents` | `false` | Stop sending events to Traffical |
 | `deduplicateAssignmentLogger` | `true` | Dedup logger calls per request |
-| `eventBatchSize` | `10` | Auto-flush threshold |
+| `trackDecisions` | `true` | Emit a decision event per `decide()` |
+| `batchSize` | `10` | Events per delivery batch (auto-flush threshold) |
+| `flushIntervalMs` | `30000` | Event flush cadence (PHP flushes on batch-full or request end) |
+| `deduplicateExposures` | `true` | Exposure session-dedup on/off (S4) |
+| `exposureSessionTtlMs` | `1800000` | Exposure session-dedup TTL (30-minute session) |
+| `configTimeoutMs` | `10000` | Config-fetch request timeout (see note below) |
+| `eventsTimeoutMs` | `10000` | Event-delivery request timeout (see note below) |
+| `resolveTimeoutMs` | `5000` | Server-resolve request timeout (see note below) |
+| `configSource` | discovered | Custom `ConfigSource` (HTTP/file/inline/cached) |
+| `eventTransport` | discovered | Custom `EventTransport` sink |
 | `httpClient`, `requestFactory`, `streamFactory` | discovered | PSR-18/17 seams |
 | `cache` | `null` | PSR-16 shared store (FPM workers share one bundle) |
 | `logger` | `NullLogger` | PSR-3 logger |
 | `clock` | system | PSR-20 clock |
 | `plugins` | `[]` | Plugin list |
+
+> **Request timeouts.** PSR-18 defines no portable timeout API, so the SDK
+> cannot set connect/read timeouts on an arbitrary injected or auto-discovered
+> HTTP client. The `configTimeoutMs` / `eventsTimeoutMs` / `resolveTimeoutMs`
+> options carry the spec's intended values (10s / 10s / 5s); configure the
+> matching timeout on the PSR-18 client you pass as `httpClient` (e.g. Guzzle's
+> `connect_timeout` / `timeout`) to enforce them.
 
 ## Cross-language conformance
 

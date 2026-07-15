@@ -8,6 +8,7 @@ use JsonException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Traffical\Types\ConfigBundle;
+use Traffical\Types\MalformedBundleException;
 
 /**
  * A config source that reads a bundle from a JSON file on disk. Handy for
@@ -37,6 +38,14 @@ final class FileConfigSource implements ConfigSource
             return ConfigBundle::fromJson($contents);
         } catch (JsonException $e) {
             $this->logger->warning('[Traffical] Invalid config file JSON', [
+                'path' => $this->path,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        } catch (MalformedBundleException $e) {
+            // S8: discard a structurally-bad bundle and fail open.
+            $this->logger->warning('[Traffical] Malformed config bundle in file', [
                 'path' => $this->path,
                 'error' => $e->getMessage(),
             ]);

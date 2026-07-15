@@ -28,6 +28,22 @@ final class AssignmentHash
     private const UNIFORM_MODULUS = 9007199254740992;
 
     /**
+     * The v2 contract assumes a 64-bit platform: unit keys and buckets are
+     * derived from the first 64 bits of the digest, and canonical numeric
+     * stringification (S2) relies on 64-bit integer semantics. Fail loudly on a
+     * 32-bit runtime rather than silently drift buckets.
+     */
+    private static function assert64Bit(): void
+    {
+        if (PHP_INT_SIZE < 8) {
+            throw new \RuntimeException(
+                'Traffical requires a 64-bit PHP build (PHP_INT_SIZE >= 8); '
+                . 'the SHA-256 v2 assignment hash is not deterministic on 32-bit.',
+            );
+        }
+    }
+
+    /**
      * Builds the canonical, length-framed, domain-separated assignment input.
      *
      * Format:
@@ -37,6 +53,7 @@ final class AssignmentHash
      */
     public static function input(string $unitKeyValue, string $layerId): string
     {
+        self::assert64Bit();
         $unitLen = strlen($unitKeyValue);
         $layerLen = strlen($layerId);
 

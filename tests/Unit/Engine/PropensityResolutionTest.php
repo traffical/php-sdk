@@ -85,16 +85,17 @@ final class PropensityResolutionTest extends TestCase
         self::assertSame(self::MODEL_VERSION, $model->modelVersion, 'generatedAt is canonical; modelVersion is the alias');
     }
 
-    public function testContextualModelVersionFallsBackToPolicyStateVersion(): void
+    public function testContextualModelVersionOmittedWhenNoModelTimestamp(): void
     {
-        // Pre-existing bundles carry neither generatedAt nor modelVersion on
-        // the contextual model: the policy stateVersion is emitted instead.
+        // S7: when the contextual model carries neither generatedAt nor
+        // modelVersion, the SDK MUST omit modelVersion entirely rather than
+        // fall back to the policy stateVersion (which would be a wrong label).
         $bundle = self::contextualBundle(withModelTimestamp: false);
         $decision = ResolutionEngine::decide($bundle, ['userId' => 'user-1'], ['hero.variant' => 'control']);
 
         $layer = self::layer($decision->metadata->layers, 'layer_ctx');
         self::assertSame('policy_ctx', $layer->policyId);
-        self::assertSame(self::STATE_VERSION, $layer->modelVersion);
+        self::assertNull($layer->modelVersion, 'no generatedAt/modelVersion -> omit, no stateVersion fallback');
     }
 
     public function testContextualModelTimestampWinsOverPolicyStateVersion(): void

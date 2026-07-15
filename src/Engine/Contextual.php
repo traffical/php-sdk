@@ -171,18 +171,12 @@ final class Contextual
     }
 
     /**
-     * Mirrors JavaScript String(value) for the scalar context values that can
-     * appear as categorical features.
+     * Canonical stringification (S2) of the scalar context values that can
+     * appear as categorical features, so numeric feature values map to the
+     * same trained-coefficient key across SDKs.
      */
     private static function stringify(mixed $value): string
     {
-        if (is_bool($value)) {
-            return $value ? 'true' : 'false';
-        }
-        if (is_scalar($value)) {
-            return (string) $value;
-        }
-
-        return '';
+        return Strings::jsString($value);
     }
 }

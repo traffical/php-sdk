@@ -44,6 +44,36 @@ jobs:
       - name: Run test suite (unit + conformance + integration)
         run: composer test
 
+  spec-pin-gate:
+    name: "Spec pin freshness"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with sdk-spec submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Stale-pin gate: fail when the pinned tests/sdk-spec submodule is behind
+      # the latest published spec tag, so a future spec release is not silently
+      # missed. The submodule is currently pinned at v0.7.0.
+      - name: Fail if the pinned spec is behind the latest tag
+        working-directory: tests/sdk-spec
+        run: |
+          git fetch --tags --force --quiet origin || true
+          latest_tag="$(git tag --sort=-v:refname | head -n1)"
+          if [ -z "$latest_tag" ]; then
+            echo "No spec tags found; skipping freshness gate."
+            exit 0
+          fi
+          pinned="$(git rev-parse HEAD)"
+          latest="$(git rev-list -n1 "$latest_tag")"
+          echo "Pinned spec:  $pinned"
+          echo "Latest tag:   $latest_tag ($latest)"
+          if [ "$pinned" != "$latest" ]; then
+            echo "::error::Pinned sdk-spec is behind the latest tag $latest_tag. Bump the tests/sdk-spec submodule."
+            exit 1
+          fi
+
   static-analysis:
     name: "Static analysis + code style"
     runs-on: ubuntu-latest
