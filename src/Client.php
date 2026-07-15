@@ -219,7 +219,7 @@ final class Client implements PluginHost
             env: $this->options->env,
             unitKey: $unitKey,
             timestamp: $this->nowIso(),
-            assignments: $this->narrowAssignments($decision->assignments, $exposedLayers),
+            assignments: $decision->assignments,
             layers: $exposedLayers,
             context: $decision->metadata->filteredContext,
             id: $this->ids->exposure(),
@@ -231,46 +231,6 @@ final class Client implements PluginHost
         if ($this->plugins->runExposure($event)) {
             $this->transport->log($event);
         }
-    }
-
-    /**
-     * Narrows the exposure assignments to just the parameters owned by the
-     * surviving (newly-exposed) layers, so an exposure never reports parameters
-     * the unit did not actually see this event (S4). Falls back to the full
-     * assignment map when no bundle param->layer mapping is available (e.g.
-     * server-evaluated mode).
-     *
-     * @param array<string, mixed> $assignments
-     * @param list<\Traffical\Types\LayerResolution> $layers
-     * @return array<string, mixed>
-     */
-    private function narrowAssignments(array $assignments, array $layers): array
-    {
-        $bundle = $this->options->evaluationMode === 'server' ? null : $this->getBundle();
-        if ($bundle === null) {
-            return $assignments;
-        }
-
-        $survivingLayerIds = [];
-        foreach ($layers as $layer) {
-            $survivingLayerIds[$layer->layerId] = true;
-        }
-
-        $ownedKeys = [];
-        foreach ($bundle->parameters as $param) {
-            if (isset($survivingLayerIds[$param->layerId])) {
-                $ownedKeys[$param->key] = true;
-            }
-        }
-
-        $narrowed = [];
-        foreach ($assignments as $key => $value) {
-            if (isset($ownedKeys[$key])) {
-                $narrowed[$key] = $value;
-            }
-        }
-
-        return $narrowed;
     }
 
     /**

@@ -54,9 +54,8 @@ jobs:
           submodules: recursive
 
       # Stale-pin gate: fail when the pinned tests/sdk-spec submodule is behind
-      # the latest published spec tag, so a drift-remediation spec release is not
-      # silently missed. TODO(release): after the 0.7.0 spec tag is published,
-      # bump the submodule pin (currently the published v0.5.0) to it.
+      # the latest published spec tag, so a future spec release is not silently
+      # missed. The submodule is currently pinned at v0.7.0.
       - name: Fail if the pinned spec is behind the latest tag
         working-directory: tests/sdk-spec
         run: |
