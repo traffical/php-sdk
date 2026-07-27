@@ -38,6 +38,7 @@ final class SpecVectorsTest extends TestCase
             'expected_unicode.json',
             'expected_empty_unit_key.json',
             'expected_numeric_unit_key.json',
+            'expected_contextual_key_differs.json',
         ];
 
         foreach ($files as $file) {
@@ -48,6 +49,12 @@ final class SpecVectorsTest extends TestCase
     #[DataProvider('expectedFiles')]
     public function testVectors(string $expectedFile): void
     {
+        if (!Fixtures::has($expectedFile)) {
+            self::markTestSkipped(
+                "{$expectedFile} is not in the pinned sdk-spec — advance the submodule to enforce it.",
+            );
+        }
+
         $expected = Fixtures::load($expectedFile);
         self::assertArrayHasKey('bundle', $expected, "{$expectedFile} missing 'bundle' reference");
 
@@ -158,6 +165,48 @@ final class SpecVectorsTest extends TestCase
                 $allocationNames,
                 "{$label}: expected allocation {$tc['expectedAllocation']} not selected",
             );
+        }
+
+        // Allocation identity: per-policy expectations, for bundles that resolve
+        // more than one policy per decision. `allocationKey` pins the warehouse
+        // join column; the propensity pins the whole distribution, so a uniform
+        // fallback fails even on a seed that happens to select the same arm.
+        if (isset($tc['expectedPolicies']) && is_array($tc['expectedPolicies'])) {
+            /** @var array<string, array<string, mixed>> $expectedPolicies */
+            $expectedPolicies = $tc['expectedPolicies'];
+            foreach ($expectedPolicies as $policyId => $expected) {
+                $layer = null;
+                foreach ($decision->metadata->layers as $candidate) {
+                    if ($candidate->policyId === $policyId) {
+                        $layer = $candidate;
+                        break;
+                    }
+                }
+                self::assertNotNull($layer, "{$label}: no resolved layer for policy {$policyId}");
+                self::assertSame(
+                    $expected['allocationName'],
+                    $layer->allocationName,
+                    "{$label}: allocation for {$policyId}",
+                );
+                if (isset($expected['allocationKey'])) {
+                    self::assertSame(
+                        $expected['allocationKey'],
+                        $layer->allocationKey,
+                        "{$label}: allocationKey for {$policyId}",
+                    );
+                }
+                if (isset($expected['probabilities'], $expected['selectedIndex'])) {
+                    /** @var list<float> $probabilities */
+                    $probabilities = $expected['probabilities'];
+                    self::assertNotNull($layer->probability, "{$label}: no propensity for {$policyId}");
+                    self::assertEqualsWithDelta(
+                        $probabilities[$expected['selectedIndex']],
+                        $layer->probability,
+                        1e-6,
+                        "{$label}: propensity for {$policyId}",
+                    );
+                }
+            }
         }
     }
 
