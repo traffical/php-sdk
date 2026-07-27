@@ -4,6 +4,31 @@ All notable changes to the Traffical PHP SDK are documented here. This project
 adheres to [Semantic Versioning](https://semver.org/). Pre-1.0, breaking changes
 land in minor releases.
 
+## [0.2.1] - 2026-07-27
+
+### Fixed
+
+- **Contextual coefficients resolve by allocation `key`, not display `name`.**
+  `BundleContextualModel::$coefficients` is keyed by the stable allocation
+  `key` — the value written to the warehouse `allocation_name` column — but
+  scoring looked it up by `$alloc->name`. Where the two differ ("Treatment A"
+  vs "treatment-a") the lookup missed, that arm scored
+  `defaultAllocationScore`, and the trained model silently degraded toward a
+  uniform softmax: nothing errored, the policy kept serving, and the model
+  still reported as trained. Where *every* allocation's name differed, all arms
+  missed equally and the distribution was exactly uniform — an inert bandit
+  with no signal anywhere. Resolution is now `key ?? name`, so bundles produced
+  before `key` existed are unaffected.
+
+### Changed
+
+- sdk-spec submodule advanced to **v0.8.0**, which declares
+  `BundleAllocation.key` / `BundlePolicy.key` and adds the
+  `contextual_key_differs` conformance vector this release is verified against.
+- The conformance harness skips a listed vector the pinned spec does not carry
+  (`Fixtures::has()`), so a vector can be listed before the submodule advances
+  instead of erroring on a missing file.
+
 ## [0.2.0] - 2026-07-14
 
 Drift-remediation release aligning the PHP SDK with the 0.7.0 Traffical SDK
