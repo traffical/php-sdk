@@ -39,6 +39,20 @@ final class Fixtures
     }
 
     /**
+     * True when the pinned sdk-spec carries this fixture.
+     *
+     * The spec is a submodule pinned to a published tag, so a vector added to
+     * the spec is listed here before the pin advances. Callers skip rather
+     * than error on those, and the vector starts enforcing on its own the
+     * moment the pin moves — the alternative is a red suite that says nothing
+     * about the SDK.
+     */
+    public static function has(string $name): bool
+    {
+        return is_file(self::dir() . '/' . $name);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public static function load(string $name): array

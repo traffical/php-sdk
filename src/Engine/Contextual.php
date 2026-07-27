@@ -148,6 +148,17 @@ final class Contextual
     }
 
     /**
+     * Raw score per allocation.
+     *
+     * Coefficients are keyed by allocation `key` — the stable identifier — with
+     * `name` as the fallback for bundles produced before `key` existed. Keying
+     * by `name` alone is the silent-failure mode this indirection exists to
+     * prevent: the lookup misses for every allocation whose display name
+     * differs from its key ("Treatment A" vs "treatment-a"), those arms score
+     * `defaultAllocationScore`, and the trained model degrades to a uniform
+     * softmax with nothing raised anywhere. Locked by the sdk-spec
+     * `bundle_contextual_key_differs` vector.
+     *
      * @param list<BundleAllocation> $allocations
      * @param array<string, mixed> $context
      * @return list<float>
@@ -159,7 +170,7 @@ final class Contextual
     ): array {
         return array_map(
             function (BundleAllocation $alloc) use ($model, $context): float {
-                $coef = $model->coefficients[$alloc->name] ?? null;
+                $coef = $model->coefficients[$alloc->key ?? $alloc->name] ?? null;
                 if ($coef === null) {
                     return $model->defaultAllocationScore;
                 }
