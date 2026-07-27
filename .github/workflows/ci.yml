@@ -55,7 +55,7 @@ jobs:
 
       # Stale-pin gate: fail when the pinned tests/sdk-spec submodule is behind
       # the latest published spec tag, so a future spec release is not silently
-      # missed. The submodule is currently pinned at v0.7.0.
+      # missed. The submodule is currently pinned at v0.8.0.
       - name: Fail if the pinned spec is behind the latest tag
         working-directory: tests/sdk-spec
         run: |
