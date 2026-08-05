@@ -66,7 +66,7 @@ $client = new Client(new ClientOptions(
     orgId: 'org_...',
     projectId: 'prj_...',
     env: 'production',
-    apiKey: 'your_sdk_key',
+    apiKey: 'traffical_sk_…',
 ));
 
 // Resolve parameters with defaults as the fallback.
@@ -118,7 +118,7 @@ $client = new Client(new ClientOptions(
     orgId: 'org_...',
     projectId: 'prj_...',
     env: 'production',
-    apiKey: 'your_sdk_key',
+    apiKey: 'traffical_sk_…',
     evaluationMode: 'server',
 ));
 ```
@@ -144,7 +144,7 @@ $client = new Client(new ClientOptions(
     orgId: 'org_...',
     projectId: 'prj_...',
     env: 'production',
-    apiKey: 'your_sdk_key',
+    apiKey: 'traffical_sk_…',
     assignmentLogger: $logger,
     disableCloudEvents: true, // keep assignment data on your own infra
 ));
