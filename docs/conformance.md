@@ -2,7 +2,7 @@
 
 The PHP SDK is gated on the language-agnostic **Traffical SDK spec**. The spec defines deterministic test
 vectors — `bundle_*.json` inputs paired with `expected_*.json` outputs — that every SDK (PHP, JS/TS, Swift)
-must reproduce exactly. This guarantees a unit buckets into the same variant on every platform.
+must reproduce exactly. This guarantees a unit buckets into the same allocation on every platform.
 
 ## How it's wired
 

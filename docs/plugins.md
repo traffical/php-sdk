@@ -84,7 +84,7 @@ $events = $debug->getEvents(); // list of ['hook' => ..., 'data' => ...]
 ### `DecisionTrackingPlugin`
 
 Automatically calls `trackExposure()` on every `decide()` (auto-exposure). Use when `decide()` implies the
-user saw the variant.
+user experienced the allocation.
 
 ```php
 use Traffical\Plugins\DecisionTrackingPlugin;

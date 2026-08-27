@@ -1,7 +1,7 @@
 # Warehouse-Native Experimentation (PHP)
 
-Traffical supports **warehouse-native metrics** — compute experiment results directly from assignments and
-facts that live in your data warehouse. The SDK's job is to log which units were assigned to which variants.
+Traffical supports **warehouse-native metrics** — compute measurement results directly from assignments and
+facts that live in your data warehouse. The SDK's job is to log which units were assigned to which allocations.
 
 There are two ways to get assignment data into your warehouse:
 
@@ -72,10 +72,10 @@ $client = new Client(new ClientOptions(/* ... */, assignmentLogger: $logger));
 | Field | Description |
 |-------|-------------|
 | `unitKey` | The unit identifier used for bucketing |
-| `policyId` | Experiment (policy) identifier |
-| `policyKey` | Stable experiment key — use for warehouse joins |
-| `allocationName` | The assigned variant |
-| `allocationKey` | Stable variant key — use for warehouse joins |
+| `policyId` | Policy identifier |
+| `policyKey` | Stable policy key — use for warehouse joins |
+| `allocationName` | The assigned allocation |
+| `allocationKey` | Stable allocation key — use for warehouse joins |
 | `allocationId` | Allocation identifier |
 | `timestamp` | ISO 8601 assignment time |
 | `layerId` | Layer identifier |
@@ -94,8 +94,8 @@ $client = new Client(new ClientOptions(/* ... */, assignmentLogger: $logger));
 
 ## When does `assignmentLogger` fire?
 
-- **`decide()`** — after resolving parameters, the logger fires once per layer with a matched experiment and
-  variant, with `type: decision` (subject to dedup).
+- **`decide()`** — after resolving parameters, the logger fires once per layer with a matched policy and
+  allocation, with `type: decision` (subject to dedup).
 - **`trackExposure()`** — fires once per matched layer with `type: exposure`.
 
 Because `type` is part of the dedup key, calling both `decide()` and `trackExposure()` for the same decision

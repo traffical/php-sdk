@@ -21,9 +21,9 @@ final class AssignmentLogEntry
     public function __construct(
         /** The unit key / entity identifier (e.g. user_id). */
         public readonly string $unitKey,
-        /** The policy (experiment) identifier. */
+        /** The policy identifier. */
         public readonly string $policyId,
-        /** The allocation (variant) name. */
+        /** The allocation name. */
         public readonly string $allocationName,
         /** ISO 8601 timestamp of the assignment. */
         public readonly string $timestamp,

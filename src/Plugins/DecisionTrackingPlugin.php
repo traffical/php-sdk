@@ -8,8 +8,8 @@ use Traffical\Types\DecisionResult;
 
 /**
  * Automatically tracks an exposure whenever a decision is made. Useful when
- * decide() implies the user saw the variant (auto-exposure), avoiding a
- * separate trackExposure() call.
+ * decide() implies the user experienced the allocation (auto-exposure),
+ * avoiding a separate trackExposure() call.
  */
 final class DecisionTrackingPlugin extends AbstractPlugin
 {

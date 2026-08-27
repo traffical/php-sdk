@@ -1,11 +1,11 @@
 # Traffical PHP SDK
 
-[Traffical](https://traffical.io) is one control plane for experiments, feature flags, and adaptive
+[Traffical](https://traffical.io) is one control plane for experimentation, feature flags, and adaptive
 optimization. Instead of hard-coding decisions, you expose **typed parameters** — numbers, strings, booleans,
 and JSON, not just on/off toggles — and control behavior across web, mobile, push, and backend from a single
 place. Parameters are resolved **locally in the SDK** (sub-millisecond, no network round trips at runtime), and
 metrics are computed **warehouse-native**, against data you own. Start with a feature flag, graduate it to an
-A/B test, and let adaptive optimization shift traffic to the winning variant — all on the same parameter,
+A/B test, and let adaptive optimization shift traffic to the winning allocation — all on the same parameter,
 without a deploy.
 
 This package is the **official PHP SDK** (PHP `^8.1`) that brings the Traffical parameter control plane to your
@@ -15,7 +15,7 @@ PHP services.
 
 - **Local, in-process evaluation** — resolve a cached config bundle with no per-decision network call.
 - **Typed parameters with safe defaults** — bool / string / number / JSON, each with a caller-provided fallback.
-- **Layered experiments & targeting** — Google-style layered isolation, condition/attribute segmentation, and
+- **Layered experimentation & targeting** — Google-style layered isolation, condition/attribute segmentation, and
   progressive (percentage) rollouts.
 - **Adaptive optimization** — contextual-bandit scoring evaluated client-side.
 - **BYO warehouse-native assignment logging** — route structured assignment rows through your own pipeline
@@ -91,7 +91,7 @@ $decision = $client->decide(
 
 $variant = $decision->assignments['hero_variant'];
 
-// ...render the variant, then record that the user saw it:
+// ...render it, then record that the user saw it:
 $client->trackExposure($decision);
 
 // Custom analytics events. Optional args (decisionId, value, values, unitKey,
